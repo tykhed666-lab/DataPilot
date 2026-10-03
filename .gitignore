@@ -1,4 +1,5 @@
 .env
+.idea/
 .venv/
 __pycache__/
 *.py[cod]
@@ -17,4 +18,5 @@ data/*.db-*
 evals/results/
 *.log
 .DS_Store
+
 
