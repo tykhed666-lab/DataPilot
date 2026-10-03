@@ -10,9 +10,9 @@
 
 ## 在 PyCharm 中打开
 
-1. 选择 **Open**，直接打开 `D:\DataPilot`，不需要再复制到另一个目录。
+1. 选择 **Open**，直接打开 `E:\DataPilotProject`，不需要再复制到另一个目录。
 2. 进入 **Settings → Project → Python Interpreter**。
-3. 选择 Existing environment：`D:\DataPilot\.venv\Scripts\python.exe`。
+3. 选择 Existing environment：`E:\DataPilotProject\.venv\Scripts\python.exe`。
 4. 打开 PyCharm Terminal，运行 `uv run pytest`。
 
 ## 推荐的阅读顺序
