@@ -8,8 +8,8 @@ DataPilot 是一个面向 CSV、Excel 与 SQLite 的安全、可审计数据分�
 
 - Python 3.11.9
 - uv 0.12+
-- 项目目录：`E:\DataPilotProject`
-- 虚拟环境：`E:\DataPilotProject\.venv`
+- 项目目录：`E:\DataPilot`
+- 虚拟环境：`E:\DataPilot\.venv`
 
 首次安装或更新依赖：
 
