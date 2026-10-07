@@ -138,4 +138,27 @@ uv run python scripts/check_quality.py
 
 真实 Planner 冒烟已经成功执行，不需要反复消耗模型额度。
 
+## Day 1～Day 6 综合复习测试
+
+进入 LangGraph 前，可以运行下面的真实模型测试，观察前六天对象如何串联：
+
+```powershell
+$env:RUN_LIVE_MODEL_TESTS = "1"
+uv run pytest tests/integration/test_days_01_to_06_real_workflow.py -q -s
+```
+
+`-s` 表示显示测试中的分阶段输出。测试会产生一次真实 Planner 模型调用，因此完成学习后不需要频繁重复运行。
+
+执行顺序：
+
+```text
+AgentState
+→ Dataset Profile
+→ DuckDB 安全查询基线
+→ Tool Registry 动态发现
+→ OpenAI-compatible 真实模型
+→ Planner 生成 AnalysisPlan
+→ 手动 invoke 计划中的工具步骤
+```
+
 理解今天的代码后，再进入 Day 7 的 LangGraph StateGraph、节点和条件路由。

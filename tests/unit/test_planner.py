@@ -98,6 +98,7 @@ def test_planner_builds_a_plan_from_profile_and_discovered_tools() -> None:
     assert plan.question == "哪个区域收入最高？"
     assert plan.steps[0].tool_name == "query_dataset"
     assert model.calls[0].output_model_name == "AnalysisPlan"
+    assert "FROM dataset" in model.calls[0].prompt.system
     assert "query_dataset" in model.calls[0].prompt.user
     assert '"row_count": 3' in model.calls[0].prompt.user
 
