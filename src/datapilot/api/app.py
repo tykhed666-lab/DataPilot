@@ -11,9 +11,9 @@ def create_app() -> FastAPI:
 
     settings = get_settings()
     application = FastAPI(
-        title="DataPilot API",
+        title="DataPilot Agent Backend",
         version=__version__,
-        description="Safe and auditable data-analysis agent API.",
+        description="Durable Planner-Executor-Reviewer data-analysis agent.",
     )
 
     @application.get("/health/live", tags=["health"])
@@ -22,11 +22,12 @@ def create_app() -> FastAPI:
             "status": "ok",
             "service": "datapilot",
             "version": __version__,
+            "focus": "agent-backend",
         }
 
     @application.get("/health/ready", tags=["health"])
     async def health_ready() -> dict[str, str]:
-        # Day 1 只验证配置可以加载；后续再加入 DB、MCP 和模型依赖检查。
+        # Day 1 只验证配置可以加载；后续再加入 checkpoint、MCP 和模型检查。
         return {
             "status": "ready",
             "environment": settings.app_env,

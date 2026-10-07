@@ -18,7 +18,6 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     data_root: Path = Path("data")
-    database_url: str = "sqlite+aiosqlite:///./data/datapilot.db"
     checkpoint_db: Path = Path("data/checkpoints.db")
 
     openai_api_key: str | None = Field(default=None, repr=False)
@@ -27,11 +26,10 @@ class Settings(BaseSettings):
 
     max_upload_mb: int = Field(default=50, ge=1, le=500)
     sql_max_rows: int = Field(default=1000, ge=1, le=10_000)
-    python_timeout_seconds: int = Field(default=30, ge=1, le=300)
     max_agent_retries: int = Field(default=2, ge=0, le=5)
-    max_plan_steps: int = Field(default=8, ge=1, le=20)
-    max_artifact_mb: int = Field(default=20, ge=1, le=200)
-    sandbox_backend: str = "subprocess"
+    max_plan_steps: int = Field(default=8, ge=1, le=8)
+    max_tool_result_chars: int = Field(default=12_000, ge=1000, le=100_000)
+    trace_enabled: bool = True
     log_level: str = "INFO"
 
 
