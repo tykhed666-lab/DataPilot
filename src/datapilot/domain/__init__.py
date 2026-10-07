@@ -3,6 +3,7 @@
 from datapilot.domain.enums import ApprovalDecision, ErrorType, TaskStatus, ToolCallStatus
 from datapilot.domain.models import (
     AnalysisPlan,
+    DatasetIngestResult,
     DatasetRecord,
     ErrorDetail,
     EventRecord,
@@ -19,6 +20,7 @@ from datapilot.domain.models import (
 __all__ = [
     "AnalysisPlan",
     "ApprovalDecision",
+    "DatasetIngestResult",
     "DatasetRecord",
     "ErrorDetail",
     "ErrorType",

@@ -136,6 +136,13 @@ class DatasetRecord(DomainModel):
     created_at: datetime
 
 
+class DatasetIngestResult(DomainModel):
+    """Result of storing an upload, including whether content was reused."""
+
+    dataset: DatasetRecord
+    deduplicated: bool = False
+
+
 class TaskRecord(DomainModel):
     id: str = Field(min_length=1, max_length=64)
     dataset_id: str = Field(min_length=1, max_length=64)

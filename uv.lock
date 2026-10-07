@@ -239,6 +239,7 @@ version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
+    { name = "anyio" },
     { name = "duckdb" },
     { name = "fastapi" },
     { name = "langchain-openai" },
@@ -269,6 +270,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.21,<1" },
+    { name = "anyio", specifier = ">=4.11,<5" },
     { name = "duckdb", specifier = ">=1.4,<2" },
     { name = "fastapi", specifier = ">=0.120,<1" },
     { name = "langchain-openai", specifier = ">=0.3,<2" },

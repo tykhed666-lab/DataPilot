@@ -2,7 +2,7 @@
 
 DataPilot 是一个面向 CSV、Excel 与 SQLite 的安全、可审计数据分析智能体。
 
-当前仓库只完成了“Day 1 开发底座”，业务功能会按每日学习切片逐步加入。
+当前学习分支正在实现安全数据入库；业务功能会按每日学习切片逐步加入。
 
 ## 本地环境
 
@@ -34,5 +34,5 @@ uv run pyright src
 uv run python scripts/check_quality.py
 ```
 
-学习说明见 [`docs/learning/day-01-foundation.md`](docs/learning/day-01-foundation.md)。
+学习说明见 `docs/learning/`，请按 Day 1 到 Day 4 的顺序阅读。
 
