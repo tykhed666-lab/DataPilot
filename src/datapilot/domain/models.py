@@ -123,3 +123,36 @@ class ErrorDetail(DomainModel):
     message: str = Field(min_length=1, max_length=2000)
     request_id: str = Field(min_length=1, max_length=64)
     details: dict[str, Any] = Field(default_factory=dict)
+
+
+class DatasetRecord(DomainModel):
+    id: str = Field(min_length=1, max_length=64)
+    original_name: str = Field(min_length=1, max_length=255)
+    stored_path: str = Field(min_length=1, max_length=1000)
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    media_type: str = Field(min_length=1, max_length=100)
+    size: int = Field(ge=0)
+    profile: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+
+
+class TaskRecord(DomainModel):
+    id: str = Field(min_length=1, max_length=64)
+    dataset_id: str = Field(min_length=1, max_length=64)
+    question: str = Field(min_length=1, max_length=4000)
+    status: str
+    retry_count: int = Field(default=0, ge=0)
+    plan_version: int = Field(default=0, ge=0)
+    plan: dict[str, Any] | None = None
+    review: dict[str, Any] | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class EventRecord(DomainModel):
+    id: str = Field(min_length=1, max_length=64)
+    task_id: str = Field(min_length=1, max_length=64)
+    sequence: int = Field(ge=1)
+    event_type: str = Field(min_length=1, max_length=100)
+    payload: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
