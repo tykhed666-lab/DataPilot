@@ -5,10 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, cast
 
+from langchain_core.runnables import RunnableConfig
+from langgraph.checkpoint.base import BaseCheckpointSaver
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.runtime import Runtime
+from langgraph.types import Command, interrupt
 
+from datapilot.agent.approval import ApprovalDecision, ApprovalRequest, StalePlanVersionError
 from datapilot.agent.planner import Planner, PlannerRequest
 from datapilot.agent.state import AgentState
 from datapilot.contracts import TaskStatus
@@ -26,12 +32,19 @@ class WorkflowContext:
 class AgentWorkflow:
     """隐藏节点、边和路由细节，只暴露一次完整图运行。"""
 
-    def __init__(self, *, planner: Planner, tools: ToolRegistry) -> None:
+    def __init__(
+        self,
+        *,
+        planner: Planner,
+        tools: ToolRegistry,
+        checkpointer: BaseCheckpointSaver[str] | None = None,
+    ) -> None:
         self._planner = planner
         self._tools = tools
+        self._checkpointer = checkpointer or _memory_checkpointer()
         self._graph = self._build_graph()
 
-    def run(
+    def start(
         self,
         state: AgentState,
         *,
@@ -41,6 +54,38 @@ class AgentWorkflow:
 
         result = self._graph.invoke(
             state,
+            config=self._config(state["task_id"]),
+            context=WorkflowContext(dataset_relative_path=dataset_relative_path),
+        )
+        return cast(AgentState, result)
+
+    def run(
+        self,
+        state: AgentState,
+        *,
+        dataset_relative_path: str,
+    ) -> AgentState:
+        """Day 7 的兼容入口；等价于 start。"""
+
+        return self.start(state, dataset_relative_path=dataset_relative_path)
+
+    def resume(
+        self,
+        *,
+        task_id: str,
+        dataset_relative_path: str,
+        approval: ApprovalRequest,
+    ) -> AgentState:
+        """用人工审批结果恢复指定 task_id 的暂停图。"""
+
+        config = self._config(task_id)
+        snapshot = self._graph.get_state(config)
+        current = cast(AgentState, snapshot.values)
+        if current.get("plan_version") != approval.plan_version:
+            raise StalePlanVersionError("approval plan_version is stale")
+        result = self._graph.invoke(
+            Command(resume=approval.model_dump(mode="json")),
+            config=config,
             context=WorkflowContext(dataset_relative_path=dataset_relative_path),
         )
         return cast(AgentState, result)
@@ -52,6 +97,7 @@ class AgentWorkflow:
         graph.add_node("profile", self._profile_node)
         graph.add_node("plan", self._plan_node)
         graph.add_node("await_approval", self._await_approval_node)
+        graph.add_node("approval", self._approval_node)
         graph.add_edge(START, "profile")
         graph.add_conditional_edges(
             "profile",
@@ -63,8 +109,13 @@ class AgentWorkflow:
             self._route_after_plan,
             {"await_approval": "await_approval", "end": END},
         )
-        graph.add_edge("await_approval", END)
-        return graph.compile(name="datapilot-day-07")
+        graph.add_edge("await_approval", "approval")
+        graph.add_conditional_edges(
+            "approval",
+            self._route_after_approval,
+            {"replan": "plan", "end": END},
+        )
+        return graph.compile(checkpointer=self._checkpointer, name="datapilot-day-08")
 
     def _profile_node(
         self,
@@ -103,6 +154,7 @@ class AgentWorkflow:
                     dataset_relative_path=runtime.context.dataset_relative_path,
                     profile=profile,
                     tools=self._tools.list_tools(),
+                    revision_feedback=state.get("revision_feedback"),
                 )
             )
         except Exception as error:
@@ -114,8 +166,31 @@ class AgentWorkflow:
 
     @staticmethod
     def _await_approval_node(state: AgentState) -> dict[str, object]:
-        del state
-        return {"status": TaskStatus.AWAITING_APPROVAL}
+        return {
+            "status": TaskStatus.AWAITING_APPROVAL,
+            "plan_version": state["plan_version"] + 1,
+        }
+
+    @staticmethod
+    def _approval_node(state: AgentState) -> dict[str, object]:
+        decision = ApprovalRequest.model_validate(
+            interrupt(
+                {
+                    "task_id": state["task_id"],
+                    "plan_version": state["plan_version"],
+                    "plan": state["plan"].model_dump(mode="json") if state["plan"] else None,
+                }
+            )
+        )
+        if decision.decision is ApprovalDecision.APPROVE:
+            return {"status": TaskStatus.EXECUTING, "revision_feedback": None}
+        if decision.decision is ApprovalDecision.REJECT:
+            return {"status": TaskStatus.REJECTED, "revision_feedback": decision.feedback}
+        return {
+            "status": TaskStatus.PLANNING,
+            "plan": None,
+            "revision_feedback": decision.feedback,
+        }
 
     @staticmethod
     def _route_after_profile(state: AgentState) -> Literal["plan", "end"]:
@@ -124,3 +199,24 @@ class AgentWorkflow:
     @staticmethod
     def _route_after_plan(state: AgentState) -> Literal["await_approval", "end"]:
         return "await_approval" if state.get("plan") is not None else "end"
+
+    @staticmethod
+    def _route_after_approval(state: AgentState) -> Literal["replan", "end"]:
+        return "replan" if state["status"] is TaskStatus.PLANNING else "end"
+
+    @staticmethod
+    def _config(task_id: str) -> RunnableConfig:
+        return {"configurable": {"thread_id": task_id}}
+
+
+def _memory_checkpointer() -> InMemorySaver:
+    """只允许恢复 AgentState 中明确登记的项目类型。"""
+
+    serializer = JsonPlusSerializer(
+        allowed_msgpack_modules=[
+            ("datapilot.contracts", "AnalysisPlan"),
+            ("datapilot.contracts", "TaskStatus"),
+            ("datapilot.dataset", "DatasetProfile"),
+        ]
+    )
+    return InMemorySaver(serde=serializer)
