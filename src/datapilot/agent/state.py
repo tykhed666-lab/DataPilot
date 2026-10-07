@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TypedDict
 
 from datapilot.contracts import AnalysisPlan, ArtifactRef, ReviewResult, TaskStatus
+from datapilot.dataset import DatasetProfile
 
 
 class AgentState(TypedDict):
@@ -14,6 +15,7 @@ class AgentState(TypedDict):
     dataset_id: str
     question: str
     status: TaskStatus
+    profile: DatasetProfile | None
     plan: AnalysisPlan | None
     current_step_index: int
     tool_result_summaries: list[str]
@@ -34,6 +36,7 @@ def create_initial_state(*, task_id: str, dataset_id: str, question: str) -> Age
         dataset_id=dataset_id,
         question=cleaned_question,
         status=TaskStatus.CREATED,
+        profile=None,
         plan=None,
         current_step_index=0,
         tool_result_summaries=[],

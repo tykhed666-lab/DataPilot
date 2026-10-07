@@ -35,7 +35,7 @@ ResearchKB 展示多模态 RAG、检索、引用和文档生命周期；DataPilo
 
 ## 当前阶段
 
-当前为 Day 6：Planner 已能根据用户问题、Dataset Profile 和动态工具列表生成 `AnalysisPlan`，并确定性拒绝未知工具、超预算计划与空问题。当天学习说明见 [Day 6：Planner Prompt、计划校验与步骤预算](docs/learning/day-06-planner.md)。LangGraph、审批、Executor、Reviewer 和 MCP 会按学习顺序逐步加入。
+当前为 Day 7：LangGraph 已把 Dataset Profile、Planner 和条件路由连接成最小状态图；成功任务进入 `awaiting_approval`，画像或规划失败则进入 `failed`。当天学习说明见 [Day 7：LangGraph StateGraph 与条件路由](docs/learning/day-07-langgraph.md)。真正的审批中断与恢复将在 Day 8 加入。
 
 旧的生产级工程尝试保存在 GitHub 分支 `archive/pre-agent-backend-replan`，不会与新的学习主线混在一起。
 
