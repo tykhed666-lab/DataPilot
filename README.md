@@ -35,7 +35,7 @@ ResearchKB 展示多模态 RAG、检索、引用和文档生命周期；DataPilo
 
 ## 当前阶段
 
-当前为 Day 1：已经完成新项目定位、最小共享契约、AgentState 和质量底座。Planner、LangGraph、MCP 等功能会按学习顺序逐步加入。
+当前为 Day 2：已经完成 CSV/XLSX 的统一 Dataset Profile，可以提取字段类型、缺失值、唯一值和数值摘要。当天学习说明见 [Day 2：统一 Dataset Profile](docs/learning/day-02-dataset-profile.md)。Planner、LangGraph、MCP 等功能会按学习顺序逐步加入。
 
 旧的生产级工程尝试保存在 GitHub 分支 `archive/pre-agent-backend-replan`，不会与新的学习主线混在一起。
 
