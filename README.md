@@ -35,7 +35,7 @@ ResearchKB 展示多模态 RAG、检索、引用和文档生命周期；DataPilo
 
 ## 当前阶段
 
-当前为 Day 7：LangGraph 已把 Dataset Profile、Planner 和条件路由连接成最小状态图；成功任务进入 `awaiting_approval`，画像或规划失败则进入 `failed`。当天学习说明见 [Day 7：LangGraph StateGraph 与条件路由](docs/learning/day-07-langgraph.md)。真正的审批中断与恢复将在 Day 8 加入。
+当前为 Day 8：LangGraph 使用内存 Checkpointer 在计划后真正暂停，并通过 `Command(resume=...)` 支持 approve、revise、reject；计划版本可阻止过期审批。当天学习说明见 [Day 8：interrupt、Command 与人工审批恢复](docs/learning/day-08-human-approval.md)。Executor 将在 Day 9 加入，SQLite 跨进程恢复将在 Day 10 加入。
 
 旧的生产级工程尝试保存在 GitHub 分支 `archive/pre-agent-backend-replan`，不会与新的学习主线混在一起。
 

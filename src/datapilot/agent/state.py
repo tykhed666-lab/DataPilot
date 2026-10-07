@@ -17,6 +17,8 @@ class AgentState(TypedDict):
     status: TaskStatus
     profile: DatasetProfile | None
     plan: AnalysisPlan | None
+    plan_version: int
+    revision_feedback: str | None
     current_step_index: int
     tool_result_summaries: list[str]
     artifacts: list[ArtifactRef]
@@ -38,6 +40,8 @@ def create_initial_state(*, task_id: str, dataset_id: str, question: str) -> Age
         status=TaskStatus.CREATED,
         profile=None,
         plan=None,
+        plan_version=0,
+        revision_feedback=None,
         current_step_index=0,
         tool_result_summaries=[],
         artifacts=[],
