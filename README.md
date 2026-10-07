@@ -35,7 +35,7 @@ ResearchKB 展示多模态 RAG、检索、引用和文档生命周期；DataPilo
 
 ## 当前阶段
 
-当前为 Day 3：Dataset 模块已经支持 DuckDB 只读查询、SQL AST 校验、强制行数上限和 JSON 友好结果。当天学习说明见 [Day 3：DuckDB 只读查询与 SQL Guardrail](docs/learning/day-03-safe-duckdb-query.md)。Planner、LangGraph、MCP 等功能会按学习顺序逐步加入。
+当前为 Day 4：已经建立统一 Tool Runtime，Fake 工具和真实 Dataset 工具都通过相同的发现、输入校验、执行、输出校验和错误 Envelope 流程。当天学习说明见 [Day 4：Tool Contract、Registry 与 Guardrail](docs/learning/day-04-tool-runtime.md)。Planner、LangGraph、MCP 等功能会按学习顺序逐步加入。
 
 旧的生产级工程尝试保存在 GitHub 分支 `archive/pre-agent-backend-replan`，不会与新的学习主线混在一起。
 
