@@ -35,7 +35,7 @@ ResearchKB 展示多模态 RAG、检索、引用和文档生命周期；DataPilo
 
 ## 当前阶段
 
-当前为 Day 4：已经建立统一 Tool Runtime，Fake 工具和真实 Dataset 工具都通过相同的发现、输入校验、执行、输出校验和错误 Envelope 流程。当天学习说明见 [Day 4：Tool Contract、Registry 与 Guardrail](docs/learning/day-04-tool-runtime.md)。Planner、LangGraph、MCP 等功能会按学习顺序逐步加入。
+当前为 Day 5：已经建立结构化模型 seam，Fake LLM 与真实 OpenAI-compatible Adapter 通过同一 interface 返回经过 Pydantic 校验的结果；CI 默认不访问云端模型。当天学习说明见 [Day 5：Fake LLM、真实模型 Adapter 与结构化输出](docs/learning/day-05-model-adapter.md)。Planner、LangGraph、MCP 等功能会按学习顺序逐步加入。
 
 旧的生产级工程尝试保存在 GitHub 分支 `archive/pre-agent-backend-replan`，不会与新的学习主线混在一起。
 
