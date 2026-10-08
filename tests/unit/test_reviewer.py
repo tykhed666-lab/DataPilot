@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from datapilot.agent import ArtifactStore, HybridReviewer, PlanExecutor
+from datapilot.agent import ArtifactStore, GroundedReview, HybridReviewer, PlanExecutor
 from datapilot.contracts import AnalysisPlan, PlanStep
 from datapilot.dataset_tools import dataset_tool_definitions
 from datapilot.model import FakeStructuredModel, ModelOutputValidationError
@@ -33,6 +33,13 @@ def write_sales_csv(root: Path) -> None:
         "region,revenue\n华东,120\n华南,80\n",
         encoding="utf-8",
     )
+
+
+def test_grounded_review_schema_requires_answer_field() -> None:
+    """The provider schema must expose the conditional answer contract."""
+    required = GroundedReview.model_json_schema().get("required", [])
+
+    assert "answer" in required
 
 
 def test_hybrid_reviewer_recomputes_numbers_before_llm_review(tmp_path: Path) -> None:
