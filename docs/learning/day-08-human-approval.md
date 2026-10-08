@@ -87,6 +87,8 @@ awaiting_approval → executing
 
 计划不再修改。Day 9 的 Executor 将从这个状态开始逐步调用工具。
 
+> 当前主线已经完成 Day 9，因此 approve 会短暂进入 `executing`，随后自动执行计划，并以 `reviewing` 或 `failed` 返回；这里描述的是审批节点本身的状态更新。
+
 ### reject
 
 ```text

@@ -99,7 +99,11 @@ workflow.run(state, dataset_relative_path="samples/sales_demo.csv")
 外部代码只需要认识 `AgentWorkflow.run()`：
 
 ```python
-workflow = AgentWorkflow(planner=planner, tools=registry)
+workflow = AgentWorkflow(
+    planner=planner,
+    tools=registry,
+    artifacts=artifact_store,  # Day 9 加入的结果存储依赖
+)
 result = workflow.run(
     initial_state,
     dataset_relative_path="samples/sales_demo.csv",
