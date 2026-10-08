@@ -19,6 +19,7 @@ def checkpoint_serializer() -> JsonPlusSerializer:
         allowed_msgpack_modules=[
             ("datapilot.contracts", "AnalysisPlan"),
             ("datapilot.contracts", "ArtifactRef"),
+            ("datapilot.contracts", "ReviewResult"),
             ("datapilot.contracts", "TaskStatus"),
             ("datapilot.dataset", "DatasetProfile"),
         ]

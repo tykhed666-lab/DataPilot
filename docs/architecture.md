@@ -22,11 +22,11 @@ flowchart LR
 
 | 模块 | 小型接口 | 隐藏的实现 |
 |---|---|---|
-| Dataset | `profile()`、`query()` | CSV/XLSX、DuckDB、结果截断 |
+| Dataset | `profile_dataset()`、`query_dataset()` | CSV/XLSX、DuckDB、结果截断 |
 | Tool Runtime | `list_tools()`、`invoke()` | 参数校验、Guardrail、MCP、审计 |
 | Agent Graph | `start()`、`resume()` | 节点、路由、Checkpoint、重试 |
-| Artifact Store | `save()`、`load()` | 文件路径、摘要、大小限制 |
-| Trace | `span()`、`export()` | 节点、模型、工具、token 和延迟 |
+| Artifact Store | `save_tool_result()`、`save_report()`、`load()` | 原子写入、路径、摘要、大小限制 |
+| Trace | `record()`、`read()` | 节点、模型、工具、决策、序号和延迟 |
 
 只有出现第二个真实实现时才引入 Adapter。例如 Fake LLM 和真实模型同时存在后，模型 seam 才是必要的；不会为了“分层”提前创建只有一个实现的空接口。
 

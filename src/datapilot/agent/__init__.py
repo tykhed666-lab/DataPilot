@@ -19,6 +19,7 @@ from datapilot.agent.planner import (
     PlannerRequest,
     UnknownToolInPlanError,
 )
+from datapilot.agent.reviewer import HybridReviewer
 from datapilot.agent.state import AgentState, create_initial_state
 from datapilot.agent.workflow import AgentWorkflow, WorkflowContext
 
@@ -31,6 +32,7 @@ __all__ = [
     "ArtifactStore",
     "ArtifactTooLargeError",
     "InvalidPlanArgumentsError",
+    "HybridReviewer",
     "PlanBudgetExceededError",
     "Planner",
     "PlanExecutor",

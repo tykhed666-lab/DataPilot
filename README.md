@@ -33,9 +33,9 @@ ResearchKB 展示多模态 RAG、检索、引用和文档生命周期；DataPilo
 - MCP Python SDK
 - Pytest、Ruff、Pyright、GitHub Actions
 
-## 当前阶段
+## v1.0 已完成
 
-当前为 Day 10：SQLite Checkpointer 支持新进程按 `task_id/thread_id` 恢复暂停任务；Executor 使用稳定 `call_id` 复用已保存 ToolEnvelope，避免完成步骤被重复调用。当天学习说明见 [Day 10：SQLite Checkpoint、call_id 与重启恢复](docs/learning/day-10-durable-execution.md)。确定性复算与 LLM Reviewer 将在 Day 11 加入。
+15 天主线已经闭环：Planner、人工审批、逐步执行、SQLite 恢复、稳定 `call_id`、混合 Reviewer、最多两次修正、MCP 2.x Server、JSONL Trace、轨迹评测、FastAPI、CLI 和 Markdown 报告均已实现。CI 全程使用 Fake Model，真实模型只在本地演示时调用。
 
 旧的生产级工程尝试保存在 GitHub 分支 `archive/pre-agent-backend-replan`，不会与新的学习主线混在一起。
 
@@ -45,6 +45,8 @@ ResearchKB 展示多模态 RAG、检索、引用和文档生命周期；DataPilo
 
 ```powershell
 uv sync --python 3.11
+Copy-Item .env.example .env
+# 在 .env 填写 OpenAI-compatible API Key、Base URL 和模型 ID
 uv run uvicorn datapilot.api.app:app --reload
 ```
 
@@ -52,6 +54,18 @@ uv run uvicorn datapilot.api.app:app --reload
 
 - API 文档：<http://127.0.0.1:8000/docs>
 - 健康检查：<http://127.0.0.1:8000/health/live>
+
+命令行完整演示：
+
+```powershell
+uv run datapilot-demo examples/sales_demo.csv "各区域总收入是多少？" --auto-approve
+```
+
+启动本地 Dataset MCP（stdio）：
+
+```powershell
+uv run datapilot-mcp --data-root ./data
+```
 
 运行质量门禁：
 
@@ -61,4 +75,8 @@ uv run python scripts/check_quality.py
 
 ## 学习方式
 
-每天只引入一个主要概念。你先阅读当天学习文档和测试，再阅读实现，完成小练习后确认是否进入下一天。尚未学习的高级模块不会提前堆入代码库。
+每天只引入一个主要概念。建议按 `docs/learning/day-01` 到 `day-15` 阅读，再结合对应测试理解。面试前可直接阅读 [面试讲解指南](docs/interview-guide.md)。
+
+## 明确边界
+
+v1.0 不包含前端、任意 Python 执行、Docker 沙箱、认证和分布式队列。HTTP API 内部直接调用同一 Tool Registry；MCP Server 是可独立启动的协议边界，后续可增加 MCP Client Adapter，而不改变 Planner 的工具契约。
