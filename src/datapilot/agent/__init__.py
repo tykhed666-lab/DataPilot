@@ -10,6 +10,7 @@ from datapilot.agent.artifacts import (
     ArtifactStore,
     ArtifactTooLargeError,
 )
+from datapilot.agent.checkpointing import open_sqlite_checkpointer
 from datapilot.agent.executor import PlanExecutor, StepExecution
 from datapilot.agent.planner import (
     InvalidPlanArgumentsError,
@@ -39,4 +40,5 @@ __all__ = [
     "UnknownToolInPlanError",
     "WorkflowContext",
     "create_initial_state",
+    "open_sqlite_checkpointer",
 ]

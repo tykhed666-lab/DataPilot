@@ -7,8 +7,6 @@ from typing import Literal, cast
 
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.base import BaseCheckpointSaver
-from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.runtime import Runtime
@@ -16,6 +14,7 @@ from langgraph.types import Command, interrupt
 
 from datapilot.agent.approval import ApprovalDecision, ApprovalRequest, StalePlanVersionError
 from datapilot.agent.artifacts import ArtifactStore
+from datapilot.agent.checkpointing import memory_checkpointer
 from datapilot.agent.executor import PlanExecutor
 from datapilot.agent.planner import Planner, PlannerRequest
 from datapilot.agent.state import AgentState
@@ -45,7 +44,7 @@ class AgentWorkflow:
         self._planner = planner
         self._tools = tools
         self._executor = PlanExecutor(tools=tools, artifacts=artifacts)
-        self._checkpointer = checkpointer or _memory_checkpointer()
+        self._checkpointer = checkpointer or memory_checkpointer()
         self._graph = self._build_graph()
 
     def start(
@@ -208,7 +207,11 @@ class AgentWorkflow:
         if plan is None or index >= len(plan.steps):
             return {"status": TaskStatus.FAILED, "error": "execution_failed:missing_step"}
 
-        execution = self._executor.execute_step(plan.steps[index])
+        execution = self._executor.execute_step(
+            task_id=state["task_id"],
+            plan_version=state["plan_version"],
+            step=plan.steps[index],
+        )
         next_index = index + 1
         updates: dict[str, object] = {
             "current_step_index": next_index,
@@ -252,17 +255,3 @@ class AgentWorkflow:
     @staticmethod
     def _config(task_id: str) -> RunnableConfig:
         return {"configurable": {"thread_id": task_id}}
-
-
-def _memory_checkpointer() -> InMemorySaver:
-    """只允许恢复 AgentState 中明确登记的项目类型。"""
-
-    serializer = JsonPlusSerializer(
-        allowed_msgpack_modules=[
-            ("datapilot.contracts", "AnalysisPlan"),
-            ("datapilot.contracts", "ArtifactRef"),
-            ("datapilot.contracts", "TaskStatus"),
-            ("datapilot.dataset", "DatasetProfile"),
-        ]
-    )
-    return InMemorySaver(serde=serializer)

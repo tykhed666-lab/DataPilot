@@ -219,7 +219,7 @@ print(artifacts.load(approved["artifacts"][0]))
 
 ## 今天没有实现的内容
 
-- `call_id` 和工具幂等恢复：Day 10。
+- `call_id` 和工具幂等恢复：已在 Day 10 完成，参见 `day-10-durable-execution.md`。
 - SQLite Checkpoint 和进程重启：Day 10。
 - Reviewer 读取 Artifact 并复算结果：Day 11。
 - MCP 远程工具 Adapter：Day 13。
