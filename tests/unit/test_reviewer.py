@@ -122,3 +122,52 @@ def test_hybrid_reviewer_rejects_passed_decision_without_answer(tmp_path: Path) 
 
     with pytest.raises(ModelOutputValidationError):
         reviewer.review(plan=plan, artifact_refs=[execution.artifact])
+
+
+def test_reviewer_embeds_budgeted_evidence_without_double_escaping(tmp_path: Path) -> None:
+    artifacts = ArtifactStore(tmp_path / "artifacts")
+    tools = ToolRegistry(dataset_tool_definitions(tmp_path))
+    step = PlanStep(
+        step_id="step-1",
+        title="检查字段",
+        tool_name="profile_dataset",
+        arguments={"relative_path": "sales.csv"},
+        expected_output="字段说明",
+    )
+    plan = AnalysisPlan(
+        question="有哪些字段？",
+        steps=[step],
+        final_deliverable="说明字段",
+    )
+    envelope = ToolEnvelope(
+        tool_name="profile_dataset",
+        call_id="b" * 32,
+        ok=True,
+        output={"columns": [f"field_<&>_{index}" for index in range(300)]},
+    )
+    reference = artifacts.save_tool_result("b" * 32, step, envelope)
+    model = FakeStructuredModel(
+        responses=[
+            {
+                "passed": True,
+                "score": 1,
+                "issues": [],
+                "retryable": False,
+                "answer": "数据包含一组已截断展示的字段。",
+            }
+        ]
+    )
+    reviewer = HybridReviewer(
+        model=model,
+        tools=tools,
+        artifacts=artifacts,
+        max_evidence_chars=1000,
+    )
+
+    reviewer.review(plan=plan, artifact_refs=[reference])
+    prompt = model.calls[0].prompt.user
+    bounded = prompt.split("<bounded_evidence>\n", 1)[1].split("\n</bounded_evidence>", 1)[0]
+
+    assert len(bounded) <= 1000
+    assert "&lt;" in bounded
+    assert "&amp;lt;" not in bounded

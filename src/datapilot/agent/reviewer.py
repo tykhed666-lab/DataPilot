@@ -84,7 +84,7 @@ class HybridReviewer:
                 f"{escape(plan.model_dump_json(indent=2), quote=False)}\n"
                 "</analysis_plan>\n\n"
                 "<bounded_evidence>\n"
-                f"{escape(self._evidence.render(evidence), quote=False)}\n"
+                f"{self._evidence.render(evidence)}\n"
                 "</bounded_evidence>\n\n"
                 "<deterministic_verification>\n"
                 "deterministic_checks=passed\n"

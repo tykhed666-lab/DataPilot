@@ -12,7 +12,7 @@ def test_live_health_check() -> None:
     assert response.json() == {
         "status": "ok",
         "service": "datapilot",
-        "version": "1.0.1",
+        "version": "1.0.2",
         "focus": "agent-backend",
     }
 

@@ -71,6 +71,8 @@ artifact_id
 step_id
 tool_name
 columns
+column_count
+columns_truncated
 row_count
 truncated
 sample_rows
@@ -80,13 +82,14 @@ output_summary
 其中：
 
 - `columns` 告诉模型数据表达什么；
+- `column_count` 和 `columns_truncated` 让超宽表可以只展示部分列名，同时明确原始列数；
 - `row_count` 告诉模型结果规模；
 - `truncated` 防止模型误以为样本是完整数据；
 - `sample_rows` 对聚合结果通常就是完整的一两行；
 - `artifact_id` 让答案可以追溯回原始证据；
 - `output_summary` 保存非表格工具的小型结构化输出。
 
-字符串、列表、字典和样本行都有上限。超过总字符预算时，优先减少样本行，但仍保留列名、行数和截断标记，而且输出始终是合法 JSON。
+字符串、列表、字典、列名和样本行都有上限。预算针对最终 XML 转义后的 Prompt 片段计算，而不是转义前的 JSON，因为 `&`、`<`、`>` 转义后会膨胀。超过预算时依次减少样本行、非表格摘要和展示列名，必要时改用紧凑 JSON；总列数、行数和截断标记继续保留。
 
 ## 5. 为什么不修改 ArtifactRef.summary
 
@@ -132,7 +135,9 @@ Evidence Digest  按需构造、有预算的模型上下文
 1. 正常聚合结果中，模型 Prompt 必须真的包含列名、`row_count` 和数值 200。
 2. Artifact 被篡改成 999 时，确定性层直接拒绝，并验证模型一次都没有调用。
 
-`test_evidence.py` 使用大量长字符串制造超预算结果，验证输出仍是合法 JSON、仍保留元数据，并自动减少样本行。
+`test_evidence.py` 使用大量长字符串、XML 特殊字符和 500 列宽表制造超预算结果，验证转义后的最终文本仍在预算内，反转义后仍是合法 JSON，并保留总列数与明确的列截断标记。
+
+Reviewer 级测试还会检查 Evidence 没有被二次转义：`&lt;` 不能再次变成 `&amp;lt;`。
 
 ## 阅读顺序
 
