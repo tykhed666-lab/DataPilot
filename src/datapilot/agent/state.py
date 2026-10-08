@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import TypedDict
 
-from datapilot.contracts import AnalysisPlan, ArtifactRef, ReviewResult, TaskStatus
+from datapilot.agent.reviewer import GroundedReview
+from datapilot.contracts import AnalysisPlan, ArtifactRef, TaskStatus
 from datapilot.dataset import DatasetProfile
 
 
@@ -22,7 +23,7 @@ class AgentState(TypedDict):
     current_step_index: int
     tool_result_summaries: list[str]
     artifacts: list[ArtifactRef]
-    review: ReviewResult | None
+    review: GroundedReview | None
     retry_count: int
     error: str | None
 

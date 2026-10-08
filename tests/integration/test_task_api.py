@@ -36,7 +36,18 @@ def test_upload_approve_review_report_flow(tmp_path: Path) -> None:
         ]
     )
     reviewer_model = FakeStructuredModel(
-        [{"passed": True, "score": 1, "issues": [], "retryable": False}]
+        [
+            {
+                "passed": True,
+                "score": 1,
+                "issues": [],
+                "retryable": False,
+                "answer": "总收入是 200。",
+                "key_findings": ["华东和华南收入合计为 200"],
+                "caveats": ["结果仅基于上传的两条记录"],
+                "evidence_artifact_ids": [],
+            }
+        ]
     )
     tools = ToolRegistry(dataset_tool_definitions(tmp_path))
     artifacts = ArtifactStore(tmp_path / "artifacts")
@@ -96,7 +107,10 @@ def test_upload_approve_review_report_flow(tmp_path: Path) -> None:
 
         report_response = client.get(f"/api/tasks/{task_id}/artifacts/{report['artifact_id']}")
         assert report_response.status_code == 200
-        assert "DataPilot 分析报告" in report_response.text
+        assert "## 直接答案\n\n总收入是 200。" in report_response.text
+        assert "## 预期交付\n\n回答总收入" in report_response.text
+        assert "华东和华南收入合计为 200" in report_response.text
+        assert "结果仅基于上传的两条记录" in report_response.text
 
 
 def test_stale_approval_uses_standard_error_shape(tmp_path: Path) -> None:

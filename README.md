@@ -16,7 +16,7 @@ ResearchKB 展示多模态 RAG、检索、引用和文档生命周期；DataPilo
 - LangGraph 在审批节点暂停，并支持 approve、revise、reject。
 - Executor 按计划动态调用数据工具，而不是写死调用顺序。
 - SQLite Checkpoint 支持程序重启后继续任务。
-- Reviewer 使用确定性复算和模型审核，最多修正两次。
+- Reviewer 先确定性复算，再把有字符预算的真实 Evidence Digest 交给模型完成语义审核和答案生成，最多修正两次。
 - 一个 Dataset MCP Server 同时展示 stdio 和 Streamable HTTP 的工具接口。
 - AgentState 只保存小型上下文和产物引用，不塞入 DataFrame 或大型结果。
 - Trace 记录节点、模型、工具、延迟、token、重试和最终状态。
@@ -35,7 +35,7 @@ ResearchKB 展示多模态 RAG、检索、引用和文档生命周期；DataPilo
 
 ## v1.0 已完成
 
-15 天主线已经闭环：Planner、人工审批、逐步执行、SQLite 恢复、稳定 `call_id`、混合 Reviewer、最多两次修正、MCP 2.x Server、JSONL Trace、轨迹评测、FastAPI、CLI 和 Markdown 报告均已实现。CI 全程使用 Fake Model，真实模型只在本地演示时调用。
+15 天主线已经闭环：Planner、人工审批、逐步执行、SQLite 恢复、稳定 `call_id`、Evidence Digest、混合 Reviewer、有证据的自然语言答案、最多两次修正、MCP 2.x Server、JSONL Trace、轨迹评测、FastAPI、CLI 和 Markdown 报告均已实现。CI 全程使用 Fake Model，真实模型只在本地演示时调用。
 
 旧的生产级工程尝试保存在 GitHub 分支 `archive/pre-agent-backend-replan`，不会与新的学习主线混在一起。
 

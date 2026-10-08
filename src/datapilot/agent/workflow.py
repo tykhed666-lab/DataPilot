@@ -398,12 +398,18 @@ class AgentWorkflow:
                 f"{json.dumps(payload.get('output'), ensure_ascii=False, indent=2)}\n```"
             )
         evidence = "\n\n".join(evidence_blocks)
+        findings = "\n".join(f"- {item}" for item in review.key_findings) or "- 无"
+        caveats = "\n".join(f"- {item}" for item in review.caveats) or "- 无"
         markdown = (
             f"# DataPilot 分析报告\n\n"
             f"## 问题\n\n{state['question']}\n\n"
+            f"## 直接答案\n\n{review.answer}\n\n"
+            f"## 预期交付\n\n{plan.final_deliverable}\n\n"
+            f"## 关键发现\n\n{findings}\n\n"
+            f"## 注意事项\n\n{caveats}\n\n"
             f"## 执行计划\n\n"
             + "\n".join(f"{index}. {step.title}" for index, step in enumerate(plan.steps, 1))
-            + f"\n\n## 证据\n\n{evidence}\n\n"
+            + f"\n\n## 证据附录\n\n{evidence}\n\n"
             f"## 审核结论\n\n通过，可信度评分：{review.score:.2f}\n"
         )
         reference = self._artifacts.save_report(state["task_id"], markdown)

@@ -1,9 +1,11 @@
 from pathlib import Path
 
+import pytest
+
 from datapilot.agent import ArtifactStore, HybridReviewer, PlanExecutor
 from datapilot.contracts import AnalysisPlan, PlanStep
 from datapilot.dataset_tools import dataset_tool_definitions
-from datapilot.model import FakeStructuredModel
+from datapilot.model import FakeStructuredModel, ModelOutputValidationError
 from datapilot.tool_runtime import ToolEnvelope, ToolRegistry
 
 
@@ -44,7 +46,18 @@ def test_hybrid_reviewer_recomputes_numbers_before_llm_review(tmp_path: Path) ->
         step=plan.steps[0],
     )
     model = FakeStructuredModel(
-        responses=[{"passed": True, "score": 0.95, "issues": [], "retryable": False}]
+        responses=[
+            {
+                "passed": True,
+                "score": 0.95,
+                "issues": [],
+                "retryable": False,
+                "answer": "总收入是 200。",
+                "key_findings": ["两条记录的收入合计为 200"],
+                "caveats": [],
+                "evidence_artifact_ids": [execution.artifact.artifact_id],
+            }
+        ]
     )
     reviewer = HybridReviewer(model=model, tools=tools, artifacts=artifacts)
 
@@ -53,7 +66,10 @@ def test_hybrid_reviewer_recomputes_numbers_before_llm_review(tmp_path: Path) ->
     assert result.passed is True
     assert len(model.calls) == 1
     assert "deterministic_checks=passed" in model.calls[0].prompt.user
-    assert '"rows"' not in model.calls[0].prompt.user
+    assert '"columns": [\n      "total_revenue"' in model.calls[0].prompt.user
+    assert '"row_count": 1' in model.calls[0].prompt.user
+    assert '"total_revenue": 200' in model.calls[0].prompt.user
+    assert result.answer == "总收入是 200。"
 
 
 def test_hybrid_reviewer_blocks_tampered_numbers_without_calling_llm(tmp_path: Path) -> None:
@@ -84,3 +100,25 @@ def test_hybrid_reviewer_blocks_tampered_numbers_without_calling_llm(tmp_path: P
     assert result.correction is not None
     assert "step-1" in result.correction
     assert model.calls == []
+
+
+def test_hybrid_reviewer_rejects_passed_decision_without_answer(tmp_path: Path) -> None:
+    write_sales_csv(tmp_path)
+    tools = ToolRegistry(dataset_tool_definitions(tmp_path))
+    artifacts = ArtifactStore(tmp_path / "artifacts")
+    plan = make_plan()
+    execution = PlanExecutor(tools=tools, artifacts=artifacts).execute_step(
+        task_id="missing-answer",
+        plan_version=1,
+        step=plan.steps[0],
+    )
+    reviewer = HybridReviewer(
+        model=FakeStructuredModel(
+            responses=[{"passed": True, "score": 1, "issues": [], "retryable": False}]
+        ),
+        tools=tools,
+        artifacts=artifacts,
+    )
+
+    with pytest.raises(ModelOutputValidationError):
+        reviewer.review(plan=plan, artifact_refs=[execution.artifact])
