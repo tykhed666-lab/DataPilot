@@ -77,7 +77,17 @@ def test_passed_hybrid_review_completes_workflow(tmp_path: Path) -> None:
     workflow, _, reviewer_model, trace = build_workflow(
         tmp_path,
         planner_responses=[plan_response()],
-        reviewer_responses=[{"passed": True, "score": 1, "issues": [], "retryable": False}],
+        reviewer_responses=[
+            {
+                "passed": True,
+                "score": 1,
+                "issues": [],
+                "retryable": False,
+                "answer": "总收入是 200。",
+                "key_findings": ["查询结果显示总收入为 200"],
+                "caveats": [],
+            }
+        ],
     )
     paused = workflow.start(
         create_initial_state(

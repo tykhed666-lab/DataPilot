@@ -20,6 +20,7 @@ def checkpoint_serializer() -> JsonPlusSerializer:
             ("datapilot.contracts", "AnalysisPlan"),
             ("datapilot.contracts", "ArtifactRef"),
             ("datapilot.contracts", "ReviewResult"),
+            ("datapilot.agent.reviewer", "GroundedReview"),
             ("datapilot.contracts", "TaskStatus"),
             ("datapilot.dataset", "DatasetProfile"),
         ]

@@ -2,7 +2,7 @@
 
 ## 60 秒项目介绍
 
-DataPilot 是一个可恢复、可审批、可评测的数据分析 Agent 后端。用户上传 CSV/XLSX 并提出问题后，Planner 基于数据画像和工具 Schema 生成结构化计划；LangGraph 在执行前暂停等待人工批准；Executor 用受控 DuckDB SQL 执行；Reviewer 先确定性复算，再用模型做语义审核，最多重规划两次；最终生成带证据的 Markdown 报告。SQLite Checkpoint、稳定 call_id、ArtifactRef 和 JSONL Trace 分别解决恢复、幂等、上下文膨胀和可观测性问题。
+DataPilot 是一个可恢复、可审批、可评测的数据分析 Agent 后端。用户上传 CSV/XLSX 并提出问题后，Planner 基于数据画像和工具 Schema 生成结构化计划；LangGraph 在执行前暂停等待人工批准；Executor 用受控 DuckDB SQL 执行；Reviewer 先确定性复算，再读取有预算的 Evidence Digest 做语义审核并生成直接答案，最多重规划两次；最终报告把自然语言结论放在正文，把原始证据放在附录。SQLite Checkpoint、稳定 call_id、ArtifactRef 和 JSONL Trace 分别解决恢复、幂等、上下文膨胀和可观测性问题。
 
 ## 高频问题
 
@@ -12,7 +12,7 @@ DataPilot 是一个可恢复、可审批、可评测的数据分析 Agent 后端
 
 ### 2. 为什么 Reviewer 不能只用 LLM？
 
-模型适合判断答案是否充分，不适合充当计算器。关键 SQL 结果由相同安全工具复算，模型只负责语义层判断。
+模型适合判断答案是否充分，不适合充当计算器。关键 SQL 结果由相同安全工具复算；随后 Evidence Packager 提供列名、行数、截断状态和有限样本，模型据此判断任务完成度并生成有证据的答案。
 
 ### 3. 如何避免无限自我修正？
 
@@ -44,7 +44,7 @@ Dataset 工具有统一的进程内契约，同时由独立 MCP 2.x Server 暴�
 
 ### 10. 当前最大局限是什么？
 
-它是单用户学习型 MVP：SQLite 和本地文件适合单机演示，不含认证、任务队列、多租户和分布式锁；报告模板展示可追溯证据，但不是 BI 产品。
+它是单用户学习型 MVP：SQLite 和本地文件适合单机演示，不含认证、任务队列、多租户和分布式锁；报告提供可读答案和可追溯证据，但不是 BI 产品。
 
 ## 建议演示顺序
 

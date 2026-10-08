@@ -148,7 +148,12 @@ def open_default_task_service(settings: Settings) -> Iterator[TaskService]:
     artifacts = ArtifactStore(data_root / "artifacts")
     trace = TraceRecorder(data_root / "traces")
     with open_sqlite_checkpointer(settings.checkpoint_db) as checkpointer:
-        reviewer = HybridReviewer(model=model, tools=tools, artifacts=artifacts)
+        reviewer = HybridReviewer(
+            model=model,
+            tools=tools,
+            artifacts=artifacts,
+            max_evidence_chars=settings.max_tool_result_chars,
+        )
         workflow = AgentWorkflow(
             planner=Planner(model=model, max_steps=settings.max_plan_steps),
             tools=tools,
