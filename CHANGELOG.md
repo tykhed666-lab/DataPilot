@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 - 2026-10-08
+
+- 修复真实模型通过 Reviewer 审核时可能省略 `answer`、导致任务失败的问题。
+- Reviewer 的模型 JSON Schema 现在明确要求返回 `answer` 字段；审核失败时仍可返回 `null`。
+- 新增 Schema 回归测试，并用 `qwen3.5-flash` 完成上传、审批、执行、审核和报告全链路验证。
+
 ## 1.1.0 - 2026-10-08
 
 - 根路径新增 FastAPI 内嵌的原生 HTML/CSS/JavaScript 分析工作台。

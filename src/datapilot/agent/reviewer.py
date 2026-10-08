@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from html import escape
 
-from pydantic import Field, model_validator
+from pydantic import ConfigDict, Field, model_validator
 
 from datapilot.agent.artifacts import ArtifactStore
 from datapilot.agent.evidence import EvidencePackager
@@ -28,6 +28,13 @@ You are the Reviewer in a data-analysis agent.
 
 class GroundedReview(ReviewResult):
     """语义审核决定及其基于证据生成的最终答案。"""
+
+    # The model-facing schema must make ``answer`` explicit, while local callers
+    # may continue to omit it for failed deterministic reviews.
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={"required": ["passed", "score", "answer"]},
+    )
 
     answer: str | None = Field(default=None, min_length=1, max_length=4000)
     key_findings: list[str] = Field(default_factory=list, max_length=10)
