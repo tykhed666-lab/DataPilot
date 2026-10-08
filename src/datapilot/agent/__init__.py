@@ -5,6 +5,12 @@ from datapilot.agent.approval import (
     ApprovalRequest,
     StalePlanVersionError,
 )
+from datapilot.agent.artifacts import (
+    ArtifactNotFoundError,
+    ArtifactStore,
+    ArtifactTooLargeError,
+)
+from datapilot.agent.executor import PlanExecutor, StepExecution
 from datapilot.agent.planner import (
     InvalidPlanArgumentsError,
     PlanBudgetExceededError,
@@ -20,11 +26,16 @@ __all__ = [
     "AgentWorkflow",
     "ApprovalDecision",
     "ApprovalRequest",
+    "ArtifactNotFoundError",
+    "ArtifactStore",
+    "ArtifactTooLargeError",
     "InvalidPlanArgumentsError",
     "PlanBudgetExceededError",
     "Planner",
+    "PlanExecutor",
     "PlannerRequest",
     "StalePlanVersionError",
+    "StepExecution",
     "UnknownToolInPlanError",
     "WorkflowContext",
     "create_initial_state",

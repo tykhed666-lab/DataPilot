@@ -12,6 +12,7 @@ node_modules/
 frontend/dist/
 data/uploads/
 data/normalized/
+data/artifacts/
 data/tasks/
 data/*.db
 data/*.db-*

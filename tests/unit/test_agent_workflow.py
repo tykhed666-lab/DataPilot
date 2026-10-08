@@ -7,6 +7,7 @@ from datapilot.agent import (
     AgentWorkflow,
     ApprovalDecision,
     ApprovalRequest,
+    ArtifactStore,
     Planner,
     StalePlanVersionError,
     create_initial_state,
@@ -39,7 +40,8 @@ def test_workflow_pauses_for_approval_and_approve_resumes_it(tmp_path: Path) -> 
                             "relative_path": "sales.csv",
                             "sql": (
                                 "SELECT region, SUM(revenue) AS total_revenue "
-                                "FROM dataset GROUP BY region"
+                                "FROM dataset GROUP BY region "
+                                "ORDER BY total_revenue DESC"
                             ),
                         },
                         "expected_output": "区域收入汇总表",
@@ -49,9 +51,11 @@ def test_workflow_pauses_for_approval_and_approve_resumes_it(tmp_path: Path) -> 
             }
         ]
     )
+    artifacts = ArtifactStore(tmp_path / "artifacts")
     workflow = AgentWorkflow(
         planner=Planner(model=model, max_steps=4),
         tools=ToolRegistry(dataset_tool_definitions(tmp_path)),
+        artifacts=artifacts,
     )
     initial_state = create_initial_state(
         task_id="task-7",
@@ -79,8 +83,18 @@ def test_workflow_pauses_for_approval_and_approve_resumes_it(tmp_path: Path) -> 
         ),
     )
 
-    assert approved["status"] is TaskStatus.EXECUTING
+    assert approved["status"] is TaskStatus.REVIEWING
     assert approved["plan_version"] == 1
+    assert approved["current_step_index"] == 1
+    assert len(approved["artifacts"]) == 1
+    assert len(approved["tool_result_summaries"]) == 1
+    saved_result = artifacts.load(approved["artifacts"][0])
+    assert saved_result["ok"] is True
+    assert saved_result["output"]["rows"][0] == {
+        "region": "华东",
+        "total_revenue": 180.0,
+    }
+    assert "rows" not in approved["tool_result_summaries"][0]
 
 
 def test_workflow_routes_profile_failure_to_failed_without_calling_model(
@@ -90,6 +104,7 @@ def test_workflow_routes_profile_failure_to_failed_without_calling_model(
     workflow = AgentWorkflow(
         planner=Planner(model=model),
         tools=ToolRegistry(dataset_tool_definitions(tmp_path)),
+        artifacts=ArtifactStore(tmp_path / "artifacts"),
     )
     initial_state = create_initial_state(
         task_id="missing-dataset",
@@ -112,6 +127,7 @@ def test_workflow_routes_invalid_model_plan_to_failed(tmp_path: Path) -> None:
     workflow = AgentWorkflow(
         planner=Planner(model=model),
         tools=ToolRegistry(dataset_tool_definitions(tmp_path)),
+        artifacts=ArtifactStore(tmp_path / "artifacts"),
     )
     initial_state = create_initial_state(
         task_id="invalid-plan",
@@ -168,6 +184,7 @@ def test_revise_replans_with_feedback_and_pauses_again(tmp_path: Path) -> None:
     workflow = AgentWorkflow(
         planner=Planner(model=model),
         tools=ToolRegistry(dataset_tool_definitions(tmp_path)),
+        artifacts=ArtifactStore(tmp_path / "artifacts"),
     )
     initial_state = create_initial_state(
         task_id="revise-task",
@@ -219,6 +236,7 @@ def test_reject_ends_the_workflow_without_replanning(tmp_path: Path) -> None:
     workflow = AgentWorkflow(
         planner=Planner(model=model),
         tools=ToolRegistry(dataset_tool_definitions(tmp_path)),
+        artifacts=ArtifactStore(tmp_path / "artifacts"),
     )
     paused = workflow.start(
         create_initial_state(
@@ -269,6 +287,7 @@ def test_resume_rejects_a_stale_plan_version(tmp_path: Path) -> None:
     workflow = AgentWorkflow(
         planner=Planner(model=model),
         tools=ToolRegistry(dataset_tool_definitions(tmp_path)),
+        artifacts=ArtifactStore(tmp_path / "artifacts"),
     )
     workflow.start(
         create_initial_state(
@@ -288,6 +307,84 @@ def test_resume_rejects_a_stale_plan_version(tmp_path: Path) -> None:
                 plan_version=2,
             ),
         )
+
+
+def test_executor_stops_after_failed_step_and_saves_failure_evidence(tmp_path: Path) -> None:
+    write_sales_csv(tmp_path)
+    model = FakeStructuredModel(
+        responses=[
+            {
+                "question": "先统计收入，再执行检查",
+                "steps": [
+                    {
+                        "step_id": "step-1",
+                        "title": "统计总收入",
+                        "tool_name": "query_dataset",
+                        "arguments": {
+                            "relative_path": "sales.csv",
+                            "sql": "SELECT SUM(revenue) AS total_revenue FROM dataset",
+                        },
+                        "expected_output": "总收入",
+                    },
+                    {
+                        "step_id": "step-2",
+                        "title": "危险查询应失败",
+                        "tool_name": "query_dataset",
+                        "arguments": {
+                            "relative_path": "sales.csv",
+                            "sql": "DROP TABLE dataset",
+                        },
+                        "expected_output": "受控错误",
+                    },
+                    {
+                        "step_id": "step-3",
+                        "title": "不应执行",
+                        "tool_name": "query_dataset",
+                        "arguments": {
+                            "relative_path": "sales.csv",
+                            "sql": "SELECT COUNT(*) AS row_count FROM dataset",
+                        },
+                        "expected_output": "行数",
+                    },
+                ],
+                "final_deliverable": "检查结果",
+            }
+        ]
+    )
+    artifacts = ArtifactStore(tmp_path / "artifacts")
+    workflow = AgentWorkflow(
+        planner=Planner(model=model),
+        tools=ToolRegistry(dataset_tool_definitions(tmp_path)),
+        artifacts=artifacts,
+    )
+    paused = workflow.start(
+        create_initial_state(
+            task_id="failed-execution",
+            dataset_id="dataset-7",
+            question="先统计收入，再执行检查",
+        ),
+        dataset_relative_path="sales.csv",
+    )
+
+    failed = workflow.resume(
+        task_id="failed-execution",
+        dataset_relative_path="sales.csv",
+        approval=ApprovalRequest(
+            decision=ApprovalDecision.APPROVE,
+            plan_version=paused["plan_version"],
+        ),
+    )
+
+    assert failed["status"] is TaskStatus.FAILED
+    assert failed["current_step_index"] == 2
+    assert failed["error"] == "execution_failed:tool_execution_failed"
+    assert [item.summary.split()[0] for item in failed["artifacts"]] == [
+        "step=step-1",
+        "step=step-2",
+    ]
+    failed_envelope = artifacts.load(failed["artifacts"][1])
+    assert failed_envelope["ok"] is False
+    assert failed_envelope["error"]["code"] == "tool_execution_failed"
 
 
 @pytest.mark.parametrize("feedback", [None, "   "])

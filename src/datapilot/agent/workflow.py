@@ -1,4 +1,4 @@
-"""把 Dataset Profile 与 Planner 连接成第一个可执行 LangGraph。"""
+"""连接 Profile、Planner、人工审批和逐步执行的 LangGraph。"""
 
 from __future__ import annotations
 
@@ -15,6 +15,8 @@ from langgraph.runtime import Runtime
 from langgraph.types import Command, interrupt
 
 from datapilot.agent.approval import ApprovalDecision, ApprovalRequest, StalePlanVersionError
+from datapilot.agent.artifacts import ArtifactStore
+from datapilot.agent.executor import PlanExecutor
 from datapilot.agent.planner import Planner, PlannerRequest
 from datapilot.agent.state import AgentState
 from datapilot.contracts import TaskStatus
@@ -37,10 +39,12 @@ class AgentWorkflow:
         *,
         planner: Planner,
         tools: ToolRegistry,
+        artifacts: ArtifactStore,
         checkpointer: BaseCheckpointSaver[str] | None = None,
     ) -> None:
         self._planner = planner
         self._tools = tools
+        self._executor = PlanExecutor(tools=tools, artifacts=artifacts)
         self._checkpointer = checkpointer or _memory_checkpointer()
         self._graph = self._build_graph()
 
@@ -98,6 +102,7 @@ class AgentWorkflow:
         graph.add_node("plan", self._plan_node)
         graph.add_node("await_approval", self._await_approval_node)
         graph.add_node("approval", self._approval_node)
+        graph.add_node("execute", self._execute_node)
         graph.add_edge(START, "profile")
         graph.add_conditional_edges(
             "profile",
@@ -113,9 +118,14 @@ class AgentWorkflow:
         graph.add_conditional_edges(
             "approval",
             self._route_after_approval,
-            {"replan": "plan", "end": END},
+            {"execute": "execute", "replan": "plan", "end": END},
         )
-        return graph.compile(checkpointer=self._checkpointer, name="datapilot-day-08")
+        graph.add_conditional_edges(
+            "execute",
+            self._route_after_execution,
+            {"continue": "execute", "end": END},
+        )
+        return graph.compile(checkpointer=self._checkpointer, name="datapilot-day-09")
 
     def _profile_node(
         self,
@@ -192,6 +202,33 @@ class AgentWorkflow:
             "revision_feedback": decision.feedback,
         }
 
+    def _execute_node(self, state: AgentState) -> dict[str, object]:
+        plan = state.get("plan")
+        index = state["current_step_index"]
+        if plan is None or index >= len(plan.steps):
+            return {"status": TaskStatus.FAILED, "error": "execution_failed:missing_step"}
+
+        execution = self._executor.execute_step(plan.steps[index])
+        next_index = index + 1
+        updates: dict[str, object] = {
+            "current_step_index": next_index,
+            "artifacts": [*state["artifacts"], execution.artifact],
+            "tool_result_summaries": [
+                *state["tool_result_summaries"],
+                execution.summary,
+            ],
+        }
+        if not execution.succeeded:
+            updates.update(
+                status=TaskStatus.FAILED,
+                error=f"execution_failed:{execution.error_code or 'unknown_tool_error'}",
+            )
+        elif next_index == len(plan.steps):
+            updates.update(status=TaskStatus.REVIEWING, error=None)
+        else:
+            updates.update(status=TaskStatus.EXECUTING, error=None)
+        return updates
+
     @staticmethod
     def _route_after_profile(state: AgentState) -> Literal["plan", "end"]:
         return "plan" if state["status"] is TaskStatus.PLANNING else "end"
@@ -201,8 +238,16 @@ class AgentWorkflow:
         return "await_approval" if state.get("plan") is not None else "end"
 
     @staticmethod
-    def _route_after_approval(state: AgentState) -> Literal["replan", "end"]:
-        return "replan" if state["status"] is TaskStatus.PLANNING else "end"
+    def _route_after_approval(state: AgentState) -> Literal["execute", "replan", "end"]:
+        if state["status"] is TaskStatus.EXECUTING:
+            return "execute"
+        if state["status"] is TaskStatus.PLANNING:
+            return "replan"
+        return "end"
+
+    @staticmethod
+    def _route_after_execution(state: AgentState) -> Literal["continue", "end"]:
+        return "continue" if state["status"] is TaskStatus.EXECUTING else "end"
 
     @staticmethod
     def _config(task_id: str) -> RunnableConfig:
@@ -215,6 +260,7 @@ def _memory_checkpointer() -> InMemorySaver:
     serializer = JsonPlusSerializer(
         allowed_msgpack_modules=[
             ("datapilot.contracts", "AnalysisPlan"),
+            ("datapilot.contracts", "ArtifactRef"),
             ("datapilot.contracts", "TaskStatus"),
             ("datapilot.dataset", "DatasetProfile"),
         ]

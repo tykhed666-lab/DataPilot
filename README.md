@@ -35,7 +35,7 @@ ResearchKB 展示多模态 RAG、检索、引用和文档生命周期；DataPilo
 
 ## 当前阶段
 
-当前为 Day 8：LangGraph 使用内存 Checkpointer 在计划后真正暂停，并通过 `Command(resume=...)` 支持 approve、revise、reject；计划版本可阻止过期审批。当天学习说明见 [Day 8：interrupt、Command 与人工审批恢复](docs/learning/day-08-human-approval.md)。Executor 将在 Day 9 加入，SQLite 跨进程恢复将在 Day 10 加入。
+当前为 Day 9：批准后的计划由 Executor 逐步动态调用 Tool Registry；完整 ToolEnvelope 保存为 JSON Artifact，AgentState 只保留短摘要和 `ArtifactRef`，失败步骤会留下证据并阻止后续执行。当天学习说明见 [Day 9：Executor、动态工具调用与 ArtifactRef](docs/learning/day-09-executor-artifacts.md)。SQLite 跨进程恢复和幂等 `call_id` 将在 Day 10 加入。
 
 旧的生产级工程尝试保存在 GitHub 分支 `archive/pre-agent-backend-replan`，不会与新的学习主线混在一起。
 
