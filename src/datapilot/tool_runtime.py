@@ -50,6 +50,7 @@ class ToolEnvelope(ContractModel):
     """所有工具调用共用的成功或失败外壳。"""
 
     tool_name: str
+    call_id: str | None = Field(default=None, min_length=1, max_length=64)
     ok: bool
     output: dict[str, Any] | None = None
     error: ToolError | None = None
@@ -79,11 +80,18 @@ class ToolRegistry:
             for definition in sorted(self._definitions.values(), key=lambda item: item.name)
         ]
 
-    def invoke(self, name: str, arguments: dict[str, object]) -> ToolEnvelope:
+    def invoke(
+        self,
+        name: str,
+        arguments: dict[str, object],
+        *,
+        call_id: str | None = None,
+    ) -> ToolEnvelope:
         definition = self._definitions.get(name)
         if definition is None:
             return ToolEnvelope(
                 tool_name=name,
+                call_id=call_id,
                 ok=False,
                 error=ToolError(
                     code="tool_not_found",
@@ -95,6 +103,7 @@ class ToolRegistry:
         except ValidationError as error:
             return ToolEnvelope(
                 tool_name=name,
+                call_id=call_id,
                 ok=False,
                 error=ToolError(
                     code="invalid_tool_input",
@@ -107,6 +116,7 @@ class ToolRegistry:
         except Exception:
             return ToolEnvelope(
                 tool_name=name,
+                call_id=call_id,
                 ok=False,
                 error=ToolError(
                     code="tool_execution_failed",
@@ -118,6 +128,7 @@ class ToolRegistry:
         except ValidationError as error:
             return ToolEnvelope(
                 tool_name=name,
+                call_id=call_id,
                 ok=False,
                 error=ToolError(
                     code="invalid_tool_output",
@@ -127,6 +138,7 @@ class ToolRegistry:
             )
         return ToolEnvelope(
             tool_name=name,
+            call_id=call_id,
             ok=True,
             output=validated_output.model_dump(mode="json"),
         )

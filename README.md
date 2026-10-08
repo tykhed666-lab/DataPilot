@@ -35,7 +35,7 @@ ResearchKB 展示多模态 RAG、检索、引用和文档生命周期；DataPilo
 
 ## 当前阶段
 
-当前为 Day 9：批准后的计划由 Executor 逐步动态调用 Tool Registry；完整 ToolEnvelope 保存为 JSON Artifact，AgentState 只保留短摘要和 `ArtifactRef`，失败步骤会留下证据并阻止后续执行。当天学习说明见 [Day 9：Executor、动态工具调用与 ArtifactRef](docs/learning/day-09-executor-artifacts.md)。SQLite 跨进程恢复和幂等 `call_id` 将在 Day 10 加入。
+当前为 Day 10：SQLite Checkpointer 支持新进程按 `task_id/thread_id` 恢复暂停任务；Executor 使用稳定 `call_id` 复用已保存 ToolEnvelope，避免完成步骤被重复调用。当天学习说明见 [Day 10：SQLite Checkpoint、call_id 与重启恢复](docs/learning/day-10-durable-execution.md)。确定性复算与 LLM Reviewer 将在 Day 11 加入。
 
 旧的生产级工程尝试保存在 GitHub 分支 `archive/pre-agent-backend-replan`，不会与新的学习主线混在一起。
 
