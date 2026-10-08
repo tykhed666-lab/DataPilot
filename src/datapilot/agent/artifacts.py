@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -28,6 +29,7 @@ class ArtifactStore:
             raise ValueError("max_bytes must be positive")
         self._root = Path(root).resolve()
         self._tool_results = self._root / "tool-results"
+        self._reports = self._root / "reports"
         self._max_bytes = max_bytes
 
     def save_tool_result(
@@ -101,6 +103,41 @@ class ArtifactStore:
         if not isinstance(loaded, dict):
             raise ValueError("artifact content must be a JSON object")
         return loaded
+
+    def save_report(self, task_id: str, markdown: str) -> ArtifactRef:
+        """保存由已验证证据生成的 Markdown 报告。"""
+
+        payload = markdown.encode("utf-8")
+        if len(payload) > self._max_bytes:
+            raise ArtifactTooLargeError("report exceeds artifact size limit")
+        artifact_id = sha256(f"{task_id}\x1f{markdown}".encode()).hexdigest()[:32]
+        relative_path = Path("reports") / f"{artifact_id}.md"
+        destination = self._root / relative_path
+        temporary = destination.with_name(f".{artifact_id}.{uuid4().hex}.tmp")
+        self._reports.mkdir(parents=True, exist_ok=True)
+        if not destination.is_file():
+            try:
+                temporary.write_bytes(payload)
+                temporary.replace(destination)
+            finally:
+                temporary.unlink(missing_ok=True)
+        return ArtifactRef(
+            artifact_id=artifact_id,
+            kind="markdown_report",
+            relative_path=relative_path.as_posix(),
+            summary="verified Markdown analysis report",
+        )
+
+    def load_bytes(self, reference: ArtifactRef) -> tuple[bytes, str]:
+        """安全读取任意已登记产物，并返回正文和媒体类型。"""
+
+        path = (self._root / reference.relative_path).resolve()
+        if not path.is_relative_to(self._root):
+            raise ValueError("artifact path escaped the configured root")
+        if not path.is_file():
+            raise ArtifactNotFoundError(reference.artifact_id)
+        media_type = "text/markdown; charset=utf-8" if path.suffix == ".md" else "application/json"
+        return path.read_bytes(), media_type
 
 
 def _validate_call_id(call_id: str) -> None:
