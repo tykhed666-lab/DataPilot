@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="DataPilot 数据分析 Agent 操作工作台">
+    <title>DataPilot 分析工作台</title>
+    <link rel="stylesheet" href="/static/app.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">AGENT BACKEND WORKBENCH</p>
+        <h1>DataPilot 分析工作台</h1>
+        <p class="subtitle">上传数据，审批 Agent 计划，查看有证据的分析答案。</p>
+      </div>
+      <div class="header-actions">
+        <span id="service-status" class="status-pill status-muted">正在检查服务</span>
+        <a class="text-link" href="/docs" target="_blank" rel="noreferrer">API 文档</a>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="card input-card" aria-labelledby="input-title">
+        <div class="section-heading">
+          <span class="step-number">1</span>
+          <div>
+            <h2 id="input-title">数据集与问题</h2>
+            <p>支持 CSV 和 XLSX，最大文件大小由后端配置决定。</p>
+          </div>
+        </div>
+
+        <label class="field-label" for="dataset-file">选择数据文件</label>
+        <input id="dataset-file" class="file-input" type="file" accept=".csv,.xlsx">
+        <button id="upload-button" class="button button-secondary" type="button">上传数据集</button>
+        <p id="upload-meta" class="helper-text">尚未上传数据集</p>
+
+        <label class="field-label" for="question">分析问题</label>
+        <textarea
+          id="question"
+          rows="5"
+          maxlength="4000"
+          placeholder="例如：哪个区域收入最高？请说明关键发现。"
+        ></textarea>
+        <button id="create-task-button" class="button button-primary" type="button">
+          创建分析任务
+        </button>
+        <button id="clear-task-button" class="button button-quiet" type="button">
+          清除浏览器中的当前任务
+        </button>
+      </section>
+
+      <section class="card agent-card" aria-labelledby="agent-title">
+        <div class="section-heading">
+          <span class="step-number">2</span>
+          <div>
+            <h2 id="agent-title">Agent 状态与计划</h2>
+            <p id="task-identity">创建任务后，这里会显示 Planner 的结构化计划。</p>
+          </div>
+        </div>
+
+        <div class="status-row">
+          <span>当前状态</span>
+          <span id="task-status" class="status-pill status-muted">尚未创建</span>
+        </div>
+
+        <div id="profile-panel" class="subpanel" hidden>
+          <h3>数据画像</h3>
+          <div id="profile-metrics" class="metric-grid"></div>
+        </div>
+
+        <div id="plan-panel" class="subpanel" hidden>
+          <div class="subpanel-title-row">
+            <h3>Planner 计划</h3>
+            <span id="plan-version" class="small-badge"></span>
+          </div>
+          <ol id="plan-list" class="plan-list"></ol>
+          <p id="final-deliverable" class="deliverable"></p>
+
+          <label class="field-label" for="revision-feedback">修改意见</label>
+          <textarea
+            id="revision-feedback"
+            rows="3"
+            maxlength="2000"
+            placeholder="选择“要求修改”时填写，例如：增加按产品维度的比较。"
+          ></textarea>
+          <div class="approval-actions">
+            <button id="approve-button" class="button button-success" type="button">批准并执行</button>
+            <button id="revise-button" class="button button-secondary" type="button">要求修改</button>
+            <button id="reject-button" class="button button-danger" type="button">拒绝任务</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card result-card" aria-labelledby="result-title">
+        <div class="section-heading">
+          <span class="step-number">3</span>
+          <div>
+            <h2 id="result-title">分析结果</h2>
+            <p>答案来自经过确定性复算和语义审核的 Evidence Digest。</p>
+          </div>
+        </div>
+
+        <div id="empty-result" class="empty-state">完成审批和执行后，结果会显示在这里。</div>
+        <div id="result-content" hidden>
+          <div class="answer-block">
+            <span class="answer-label">直接答案</span>
+            <p id="answer-output"></p>
+          </div>
+
+          <div class="result-columns">
+            <div>
+              <h3>关键发现</h3>
+              <ul id="findings-output" class="plain-list"></ul>
+            </div>
+            <div>
+              <h3>注意事项</h3>
+              <ul id="caveats-output" class="plain-list"></ul>
+            </div>
+          </div>
+
+          <div class="subpanel-title-row">
+            <h3>Markdown 报告</h3>
+            <a id="report-download" class="text-link" href="#" hidden>下载报告</a>
+          </div>
+          <pre id="report-output" class="report-output">正在加载报告……</pre>
+
+          <details class="trace-panel">
+            <summary>查看 Agent 执行轨迹</summary>
+            <ol id="trace-output" class="trace-list"></ol>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <div id="message" class="message" role="status" aria-live="polite" hidden></div>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
