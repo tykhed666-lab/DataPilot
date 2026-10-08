@@ -18,7 +18,7 @@ flowchart LR
     F --> H
 ```
 
-## 五个深模块
+## 六个深模块
 
 代码库使用少量深模块：每个模块对外接口较小，但隐藏内部复杂度。
 
@@ -30,6 +30,8 @@ flowchart LR
 | Artifact Store | `save_tool_result()`、`save_report()`、`load()` | 原子写入、路径、摘要、大小限制 |
 | Evidence Packager | `build()`、`render()` | Artifact 加载、宽表裁剪、样本行、XML 转义后字符预算 |
 | Trace | `record()`、`read()` | 节点、模型、工具、决策、序号和延迟 |
+
+Web Workbench 是 FastAPI 上的薄 Adapter：它只组合现有 `/api/*` 接口，不拥有 Agent 状态、模型凭据或分析逻辑。浏览器使用 `localStorage` 记住最近的 `task_id`，刷新后仍由后端 checkpoint 恢复真实状态。
 
 只有出现第二个真实实现时才引入 Adapter。例如 Fake LLM 和真实模型同时存在后，模型 seam 才是必要的；不会为了“分层”提前创建只有一个实现的空接口。
 
@@ -72,9 +74,9 @@ Input Guardrail
 
 安全拒绝不重试；模型格式错误和可修复工具错误允许在预算内修正。
 
-## 不进入 v1.0 主线
+## 不进入 v1.1 主线
 
-- React 前端
+- React/Vue 前端和 Node 构建链
 - 任意 Python 代码执行
 - Docker 沙箱
 - A2A 远程 Agent 协作

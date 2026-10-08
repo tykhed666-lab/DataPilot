@@ -15,6 +15,8 @@ FastAPI / CLI
 
 同时完成版本号、README、架构说明、面试指南、CI、公开仓库和 Release。
 
+v1.1 在这条 seam 上增加一个不需要 Node 构建的 Web Workbench。它是操作 Adapter，不把分析逻辑搬进浏览器。
+
 ## 1. 为什么增加 TaskService
 
 如果 FastAPI 路由直接创建模型、打开 SQLite、拼 Workflow 和处理路径，CLI 就必须复制同样代码，测试也会依赖 HTTP 细节。
@@ -55,6 +57,19 @@ GET  /api/tasks/{task_id}/artifacts/{artifact_id}
 ```
 
 创建任务会运行到审批暂停点，而不是在 HTTP 请求中自动批准。过期 `plan_version` 返回 409。
+
+### 轻量 Web Workbench
+
+访问根路径 `/` 可以完成上传、提问、查看计划、approve/revise/reject、查看答案、报告和 Trace。页面由 FastAPI 同源提供：
+
+```text
+src/datapilot/api/static/
+├── index.html
+├── app.css
+└── app.js
+```
+
+它使用原生 HTML/CSS/JavaScript，不引入 React、npm 或 CDN。所有不可信内容通过 `textContent` 渲染，浏览器只保存最近的 `task_id`，不会接触模型 API Key。
 
 ## 4. 统一错误格式
 
@@ -225,7 +240,7 @@ v1.0 发布包括：
 - 没有认证、权限和多租户；
 - SQLite 不用于高并发分布式执行；
 - MCP Server 尚未作为 Workflow 的远程 Adapter；
-- 没有前端和后台任务队列；
+- 只有轻量操作工作台，没有前端框架、复杂图表和后台任务队列；
 - 真实模型质量需要用户自行配置并评测。
 
 第 15 天的核心不是“把项目打包”，而是证明所有模块通过一个可运行、可测试、可解释的应用 seam 连成了真正回答用户问题的闭环。

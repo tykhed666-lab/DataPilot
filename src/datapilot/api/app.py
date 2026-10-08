@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Annotated
 from uuid import uuid4
 
 from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 
 from datapilot import __version__
@@ -17,6 +19,8 @@ from datapilot.agent import ApprovalRequest, ArtifactNotFoundError, StalePlanVer
 from datapilot.config import get_settings
 from datapilot.contracts import ContractModel
 from datapilot.service import TaskNotFoundError, TaskService, open_default_task_service
+
+STATIC_ROOT = Path(__file__).with_name("static")
 
 
 class CreateTaskRequest(ContractModel):
@@ -50,6 +54,11 @@ def create_app(service: TaskService | None = None) -> FastAPI:
         description="Durable Planner-Executor-Reviewer data-analysis agent.",
         lifespan=lifespan,
     )
+    application.mount("/static", StaticFiles(directory=STATIC_ROOT), name="static")
+
+    @application.get("/", include_in_schema=False)
+    async def workbench() -> FileResponse:
+        return FileResponse(STATIC_ROOT / "index.html", media_type="text/html")
 
     @application.exception_handler(TaskNotFoundError)
     async def task_not_found(request: Request, error: TaskNotFoundError) -> JSONResponse:

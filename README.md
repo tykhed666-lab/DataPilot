@@ -33,9 +33,9 @@ ResearchKB 展示多模态 RAG、检索、引用和文档生命周期；DataPilo
 - MCP Python SDK
 - Pytest、Ruff、Pyright、GitHub Actions
 
-## v1.0 已完成
+## v1.1 已完成
 
-15 天主线已经闭环：Planner、人工审批、逐步执行、SQLite 恢复、稳定 `call_id`、Evidence Digest、混合 Reviewer、有证据的自然语言答案、最多两次修正、MCP 2.x Server、JSONL Trace、轨迹评测、FastAPI、CLI 和 Markdown 报告均已实现。CI 全程使用 Fake Model，真实模型只在本地演示时调用。
+15 天主线已经闭环：Planner、人工审批、逐步执行、SQLite 恢复、稳定 `call_id`、Evidence Digest、混合 Reviewer、有证据的自然语言答案、最多两次修正、MCP 2.x Server、JSONL Trace、轨迹评测、FastAPI、CLI 和 Markdown 报告均已实现。v1.1 增加由 FastAPI 直接提供的轻量操作工作台，不改变 Agent 后端的项目重心。CI 全程使用 Fake Model，真实模型只在本地演示时调用。
 
 旧的生产级工程尝试保存在 GitHub 分支 `archive/pre-agent-backend-replan`，不会与新的学习主线混在一起。
 
@@ -47,11 +47,12 @@ ResearchKB 展示多模态 RAG、检索、引用和文档生命周期；DataPilo
 uv sync --python 3.11
 Copy-Item .env.example .env
 # 在 .env 填写 OpenAI-compatible API Key、Base URL 和模型 ID
-uv run uvicorn datapilot.api.app:app --reload
+uv run datapilot
 ```
 
 浏览器打开：
 
+- 分析工作台：<http://127.0.0.1:8000>
 - API 文档：<http://127.0.0.1:8000/docs>
 - 健康检查：<http://127.0.0.1:8000/health/live>
 
@@ -79,4 +80,4 @@ uv run python scripts/check_quality.py
 
 ## 明确边界
 
-v1.0 不包含前端、任意 Python 执行、Docker 沙箱、认证和分布式队列。HTTP API 内部直接调用同一 Tool Registry；MCP Server 是可独立启动的协议边界，后续可增加 MCP Client Adapter，而不改变 Planner 的工具契约。
+v1.1 只包含原生 HTML/CSS/JavaScript 操作工作台，不包含 React、前端构建链、任意 Python 执行、Docker 沙箱、认证和分布式队列。HTTP API 内部直接调用同一 Tool Registry；MCP Server 是可独立启动的协议边界，后续可增加 MCP Client Adapter，而不改变 Planner 的工具契约。

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0 - 2026-10-08
+
+- 根路径新增 FastAPI 内嵌的原生 HTML/CSS/JavaScript 分析工作台。
+- 支持数据上传、问题提交、计划审批、修改、拒绝、答案、报告和 Trace 查看。
+- 使用 `localStorage` 保存最近 task_id，刷新后通过后端 checkpoint 恢复任务。
+- 保留 `/docs` Swagger 入口，不引入 Node、前端构建链或外部 CDN。
+
 ## 1.0.2 - 2026-10-08
 
 - Evidence Digest 字符预算现在针对 XML 转义后的最终 Prompt 文本计算。
