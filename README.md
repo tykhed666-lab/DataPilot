@@ -1,85 +1,237 @@
-# DataPilot Agent Backend
+# DataPilot
 
+> A durable, human-governed and evidence-grounded data analysis agent.
+
+[![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-Stateful%20Workflow-1C3C3C)](https://www.langchain.com/langgraph)
+[![MCP](https://img.shields.io/badge/MCP-2.x-6C5CE7)](https://modelcontextprotocol.io/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Workbench-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![CI](https://github.com/tykhed666-lab/DataPilot/actions/workflows/quality.yml/badge.svg)](https://github.com/tykhed666-lab/DataPilot/actions)
+[![License](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![M8ven Score](https://m8ven.ai/badge/mcp/tykhed666-lab-datapilot-1wz3x3?v=f1bee025285465ae0a347e80dde0f786)](https://m8ven.ai/mcp/tykhed666-lab-datapilot-1wz3x3?s=readme)
 
-DataPilot 是一个用于 AI Agent 后端面试的状态化数据分析智能体。项目重点不是前端页面或生产级基础设施，而是把一条可解释、可恢复、可评测的 Agent 工作流实现完整：
+DataPilot 是一个面向结构化数据分析的状态化 Agent 后端。它将数据画像、计划生成、人工审批、工具执行、结果复核与报告交付组织为一条可恢复、可观测、可评测的工作流。
 
-```text
-profile → plan → human approval → execute → review → report
+用户上传 CSV 或 XLSX 文件并提出问题后，DataPilot 会生成结构化分析计划，在执行前等待人工确认，通过受控工具完成查询与计算，再结合确定性复算和语义审核生成有证据支撑的答案。任务状态由 Checkpoint 持久化，进程重启后仍可继续执行。
+
+## Workflow
+
+```mermaid
+flowchart LR
+    A[CSV / XLSX] --> B[Dataset Profile]
+    B --> C[Planner]
+    C --> D{Human Approval}
+    D -->|approve| E[Executor]
+    D -->|revise| C
+    D -->|reject| X[End]
+    E --> F[Deterministic Verification]
+    F --> G[Evidence Digest]
+    G --> H[Semantic Reviewer]
+    H -->|passed| I[Grounded Report]
+    H -->|retryable| C
+    H -->|failed / exhausted| X
+    I --> X
 ```
 
-## 与 ResearchKB 的区别
+```text
+profile → plan → approve → execute → verify → review → report
+```
 
-ResearchKB 展示多模态 RAG、检索、引用和文档生命周期；DataPilot 进一步学习动态规划、工具选择、LangGraph 状态图、Human-in-the-loop、持久化恢复、Reviewer 自我修正、MCP、Trace 和 Agent 轨迹评测。
+## Capabilities
 
-## 15 天目标
+### Structured planning
 
-- Planner 生成经过 Pydantic 校验的 `AnalysisPlan`。
-- LangGraph 在审批节点暂停，并支持 approve、revise、reject。
-- Executor 按计划动态调用数据工具，而不是写死调用顺序。
-- SQLite Checkpoint 支持程序重启后继续任务。
-- Reviewer 先确定性复算，再把按宽表裁剪且以 XML 转义后长度计费的真实 Evidence Digest 交给模型完成语义审核和答案生成，最多修正两次。
-- 一个 Dataset MCP Server 同时展示 stdio 和 Streamable HTTP 的工具接口。
-- AgentState 只保存小型上下文和产物引用，不塞入 DataFrame 或大型结果。
-- Trace 记录节点、模型、工具、延迟、token、重试和最终状态。
-- 12～15 个评测案例同时检查最终答案和 Agent 执行轨迹。
+Planner 根据数据画像与工具 Schema 生成 Pydantic 校验的 `AnalysisPlan`。工具不存在、参数越界或步骤超出预算时，计划会在进入执行层之前被拒绝。
 
-完整排期见 [15 天实施计划](docs/15-day-plan.md)，模块设计见 [Agent 后端架构](docs/architecture.md)。
+### Human-in-the-loop
 
-## 技术栈
+工作流通过 LangGraph `interrupt` 在关键节点暂停，支持 `approve`、`revise` 和 `reject`。审批状态写入 Checkpoint，不依赖进程内等待或临时会话。
 
-- Python 3.11、uv
-- FastAPI、Pydantic
-- LangGraph、SQLite Checkpoint
-- DuckDB、Pandas、SQLGlot
-- MCP Python SDK
-- Pytest、Ruff、Pyright、GitHub Actions
+### Controlled execution
 
-## v1.1 已完成
+Executor 按计划动态发现并调用工具。SQLGlot 负责语法树级安全检查，DuckDB 仅暴露受控数据关系，并对查询类型与最大返回行数施加限制。
 
-15 天主线已经闭环：Planner、人工审批、逐步执行、SQLite 恢复、稳定 `call_id`、Evidence Digest、混合 Reviewer、有证据的自然语言答案、最多两次修正、MCP 2.x Server、JSONL Trace、轨迹评测、FastAPI、CLI 和 Markdown 报告均已实现。v1.1 增加由 FastAPI 直接提供的轻量操作工作台，不改变 Agent 后端的项目重心。CI 全程使用 Fake Model，真实模型只在本地演示时调用。
+### Durable recovery
 
-旧的生产级工程尝试保存在 GitHub 分支 `archive/pre-agent-backend-replan`，不会与新的学习主线混在一起。
+SQLite Checkpoint 保存工作流状态。工具调用使用由任务、计划版本和步骤生成的稳定 `call_id`，恢复执行时可以复用已有产物，避免重复副作用。
 
-## 本地运行
+### Evidence-grounded review
 
-项目目录：`E:\DataPilot`
+Reviewer 先对关键结果进行确定性复算，再基于受预算约束的 Evidence Digest 完成语义审核与答案生成。Digest 包含字段、行数、截断状态和有限样本，完整结果不会被复制进模型上下文。
+
+### Bounded correction
+
+可修复错误会在有限预算内触发重新规划；安全错误直接终止；预算耗尽后进入明确失败态。每一次新计划仍需经过人工审批。
+
+### Trace and evaluation
+
+系统记录节点、模型、工具、延迟、Token、重试与最终状态。评测不仅检查最终答案，也验证必须出现或禁止出现的工具轨迹，并支持确定性故障注入。
+
+### MCP tool surface
+
+Dataset 工具共享统一契约，可由进程内 Tool Registry 调用，也可通过独立 MCP 2.x Server 暴露。真实子进程集成测试覆盖工具发现与调用链路。
+
+## Architecture
+
+DataPilot 由六个核心模块组成：
+
+| Module | Responsibility |
+|---|---|
+| Dataset | 加载 CSV / XLSX、生成数据画像、执行受控 DuckDB 查询 |
+| Tool Runtime | 工具注册、发现、输入输出校验与统一错误封装 |
+| Agent Graph | 规划、审批、执行、审核、重试与状态路由 |
+| Artifact Store | 原子保存工具结果和报告，对工作流只暴露引用 |
+| Evidence Packager | 从产物构建受字符预算约束的审核证据 |
+| Trace | 记录节点、模型、工具、决策、序号与延迟 |
+
+Web Workbench 是 FastAPI 之上的轻量 Adapter。它通过 `/api/*` 接口组合现有能力，不持有 Agent 状态、模型凭据或分析逻辑。
+
+### State model
+
+AgentState 只保存工作流决策所需的小型信息：
+
+- 任务、数据集和用户问题
+- 当前状态、步骤与结构化计划
+- 工具结果摘要与 `ArtifactRef`
+- Reviewer 结论、答案和重试计数
+
+DataFrame、完整 SQL 结果、Plotly HTML、大型模型原文和本机绝对路径不会进入 AgentState。大型内容由 Artifact Store 管理，从而控制 Checkpoint 体积、序列化风险和模型上下文长度。
+
+### Guardrails
+
+```text
+Input Guardrail
+→ Plan Guardrail
+→ Tool Input Guardrail
+→ Tool Execution
+→ Tool Output Guardrail
+→ Reviewer
+→ Report Guardrail
+```
+
+## Quick start
+
+环境要求：Python 3.11 与 [uv](https://docs.astral.sh/uv/)。
 
 ```powershell
+git clone https://github.com/tykhed666-lab/DataPilot.git
+cd DataPilot
 uv sync --python 3.11
 Copy-Item .env.example .env
-# 在 .env 填写 OpenAI-compatible API Key、Base URL 和模型 ID
+```
+
+在 `.env` 中配置 OpenAI-compatible API Key、Base URL 和模型 ID：
+
+```dotenv
+OPENAI_API_KEY=replace-me
+OPENAI_BASE_URL=https://provider.example.com/v1
+AGENT_MODEL=replace-me
+```
+
+启动服务：
+
+```powershell
 uv run datapilot
 ```
 
-浏览器打开：
+服务启动后可访问：
 
-- 分析工作台：<http://127.0.0.1:8000>
-- API 文档：<http://127.0.0.1:8000/docs>
-- 健康检查：<http://127.0.0.1:8000/health/live>
+- Workbench：<http://127.0.0.1:8000>
+- OpenAPI：<http://127.0.0.1:8000/docs>
+- Health check：<http://127.0.0.1:8000/health/live>
 
-命令行完整演示：
+## Usage
+
+### Web Workbench
+
+Workbench 提供完整的交互链路：上传数据集、创建任务、查看计划、提交审批、读取分析报告以及检查 Agent Trace。
+
+### CLI
+
+使用内置示例数据运行一次完整分析：
 
 ```powershell
 uv run datapilot-demo examples/sales_demo.csv "各区域总收入是多少？" --auto-approve
 ```
 
-启动本地 Dataset MCP（stdio）：
+### MCP Server
+
+通过 stdio 启动 Dataset MCP Server：
 
 ```powershell
 uv run datapilot-mcp --data-root ./data
 ```
 
-运行质量门禁：
+## Quality
+
+项目使用 Ruff、Pyright、Pytest 和 GitHub Actions 建立自动化质量门禁：
 
 ```powershell
 uv run python scripts/check_quality.py
 ```
 
-## 学习方式
+测试覆盖以下关键路径：
 
-每天只引入一个主要概念。建议按 `docs/learning/day-01` 到 `day-15` 阅读，再结合对应测试理解。面试前可直接阅读 [面试讲解指南](docs/interview-guide.md)。
+- 数据画像与安全查询
+- Tool Registry 与输入输出约束
+- 计划校验和模型适配器
+- 审批、执行与条件路由
+- Checkpoint 恢复与幂等调用
+- 确定性复算与 Reviewer 修正闭环
+- MCP 子进程集成
+- Trace、轨迹评测与 API 工作流
 
-## 明确边界
+CI 使用 Fake Model 保持可重复性，不需要真实模型密钥，也不会产生模型调用费用。真实模型仅用于显式启用的本地冒烟测试。
 
-v1.1 只包含原生 HTML/CSS/JavaScript 操作工作台，不包含 React、前端构建链、任意 Python 执行、Docker 沙箱、认证和分布式队列。HTTP API 内部直接调用同一 Tool Registry；MCP Server 是可独立启动的协议边界，后续可增加 MCP Client Adapter，而不改变 Planner 的工具契约。
+## Project structure
+
+```text
+DataPilot/
+├─ src/datapilot/
+│  ├─ agent/              # Planner、Executor、Reviewer 与工作流状态
+│  ├─ api/                # FastAPI 接口与 Web Workbench
+│  ├─ dataset.py          # 数据加载与画像
+│  ├─ dataset_tools.py    # 受控数据工具
+│  ├─ tool_runtime.py     # Tool Registry 与运行时约束
+│  ├─ mcp_server.py       # MCP Server
+│  ├─ tracing.py          # JSONL Trace
+│  └─ evaluation.py       # 结果与轨迹评测
+├─ tests/                 # 单元测试与集成测试
+├─ evals/                 # 评测案例
+├─ examples/              # 示例数据
+├─ docs/                  # 架构与实现文档
+└─ scripts/               # 质量检查脚本
+```
+
+## Technology
+
+| Area | Stack |
+|---|---|
+| Agent orchestration | LangGraph、Pydantic |
+| API and workbench | FastAPI、原生 HTML / CSS / JavaScript |
+| Data processing | DuckDB、Pandas、SQLGlot、OpenPyXL、Plotly |
+| Persistence | SQLite Checkpoint、本地 Artifact Store |
+| Tool protocol | MCP Python SDK 2.x |
+| Model integration | OpenAI-compatible API、Fake Model |
+| Engineering | Pytest、Ruff、Pyright、GitHub Actions |
+
+## Scope
+
+DataPilot 当前采用单机部署模型，重点是状态化 Agent 工作流、数据工具安全、执行恢复和结果可验证性。以下能力不在当前版本范围内：
+
+- 多租户、认证与计费
+- 分布式任务队列和分布式锁
+- 任意 Python 代码执行与 Docker 沙箱
+- Exactly-once 语义
+- 长期个性化记忆与远程多 Agent 协作
+
+这些边界保持了核心系统的可理解性，也为后续接入外部 Artifact Store、任务队列、认证层和 MCP Client Adapter 保留了清晰接口。
+
+## Documentation
+
+- [Architecture](docs/architecture.md) — 工作流、模块边界、状态模型与 Guardrail
+- [Changelog](CHANGELOG.md) — 版本演进记录
+
+## License
+
+DataPilot is released under the [MIT License](LICENSE).
