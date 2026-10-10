@@ -1,5 +1,7 @@
 # DataPilot Agent Backend
 
+[![M8ven Score](https://m8ven.ai/badge/mcp/tykhed666-lab-datapilot-1wz3x3?v=f1bee025285465ae0a347e80dde0f786)](https://m8ven.ai/mcp/tykhed666-lab-datapilot-1wz3x3?s=readme)
+
 DataPilot 是一个用于 AI Agent 后端面试的状态化数据分析智能体。项目重点不是前端页面或生产级基础设施，而是把一条可解释、可恢复、可评测的 Agent 工作流实现完整：
 
 ```text
